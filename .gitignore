@@ -1,0 +1,9 @@
+*~
+*.swp
+MANIFEST
+dist/*
+testing/*
+build/*
+*.pyc
+*.bak
+TODO
