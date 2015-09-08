@@ -62,16 +62,16 @@ def main():
     AuC.OP = 'ffffffffffffffff'
     
     ### ARPd config ###
-    # ARP resolver for the P-GW
+    # ARP resolver for the PGW on SGi
     ARPd.GGSN_ETH_IF = 'eth0'
     ARPd.GGSN_MAC_ADDR = '08:00:00:01:02:03'
     ARPd.GGSN_IP_ADDR = '192.168.1.100'
-    # IP given to UE
+    # IP given to UE on SGi
     ARPd.SUBNET_PREFIX = '192.168.1'
     ARPd.IP_POOL = []
     for ue_config in UE.values():
         ARPd.IP_POOL.append(ue_config['IP'])
-    # IPv4 1st hop after GGSN
+    # IPv4 1st hop after PGW on SGi
     ARPd.ROUTER_MAC_ADDR = 'f4:00:00:01:02:03'
     ARPd.ROUTER_IP_ADDR = '192.168.1.1'
     
@@ -84,15 +84,45 @@ def main():
     GTPUd.EXT_IF = ARPd.GGSN_ETH_IF
     GTPUd.GGSN_MAC_ADDR = ARPd.GGSN_MAC_ADDR
     # mobile traffic filtering
-    GTPUd.BLACKHOLING = 'ext' # only traffic to local LAN will be handled
+    GTPUd.BLACKHOLING = 'ext' # only traffic to local LAN will be forwarded
     GTPUd.WL_ACTIVE = True # excepted DNS and NTP request to the Internet which will be handled too
     GTPUd.WL_PORTS = [('UDP', 53), ('UDP', 123)]
     
     ### MME config ###
-    # hardcode DNS servers to be signalled to UE
-    for apn in UEd.ESM_PDN:
-        UEd.ESM_PDN[apn]['DNS'][0] = '192.168.1.1'
-        UEd.ESM_PDN[apn]['DNS'][1] = '8.8.8.8'
+    MME.ConfigS1 = {
+    'MMEname': 'MichTelecomMME', # optional
+    'ServedGUMMEIs': [
+        {'servedPLMNs': [bytes(PLMN('00101'))],
+         'servedGroupIDs': ['\x00\x01'],
+         'servedMMECs': ['\x01']}
+        ], # mandatory, at least 1
+    'RelativeMMECapacity': 20, # mandatory, 0 < X < 255
+    'MMERelaySupportIndicator': None, # optional
+    'CriticalDiagnostics': None, # optional, 'true' otherwise
+    }
+    ENBd.TRACE = True # trace all S1 eNB-related procedures
+    UEd.TRACE_S1 = True # trace all S1 UE-related procedures
+    UEd.TRACE_NAS = True # trace all NAS procedures
+    UEd.NASSEC_MAC = True # enforce NAS security
+    UEd.NASSEC_ULCNT = True # enforce NAS UL count
+    UEd.AUTH_POL_ATT = 1 # attach authentication policy
+    UEd.AUTH_POL_TAU = 1 # TAU authentication policy
+    UEd.AUTH_POL_SERV = 10 # service request authentication policy
+    UEd.AUTH_AMF = b'\x80\x00' # Authentication Management Field
+    UEd.SMC_IMEI_POL = 1 # request IMEISV only once during security mode ctrl
+    UEd.SMC_EEA = [0, 1, 2, 3] # encryption algorithm priority: 0:None, 1:SNOW, 2:AES, 3:ZUC
+    UEd.SMC_EIA = [1, 2, 3] # integrity protection algorithm priority: 0:None (emergency call only), 1:SNOW, 2:AES, 3:ZUC
+    UEd.ESM_APN_DEF = 'corenet' # default APN
+    UEd.ESM_PDN = {
+        'corenet': {
+            'IP':[1, '0.0.0.0'], # PDN type (1:IPv4, 2:IPv6, 3:IPv4v6), UE IP@ will be set at runtime
+            'DNS':[192.168.1.1', '8.8.8.8'], # 2 IP@ for DNS servers
+            'QCI': 9, # QoS class id (9: internet browsing), NAS + S1 parameter
+            'PriorityLevel': 15, # no priority (S1 parameter)
+            'PreemptCap': 'shall-not-trigger-pre-emption', # or 'may-trigger-pre-emption' (S1 parameter)
+            'PreemptVuln': 'not-pre-emptable', # 'pre-emptable' (S1 parameter)
+            },
+        } # list of configured APN
     
     # start AuC, ARPd and GTPUd, MMEd
     log('\n\n\n', withdate=False)
@@ -100,7 +130,7 @@ def main():
     log('...')
     AUCd = AuC()
     GTPd = GTPUd() # this starts ARPd automatically
-    MME = MMEd(config={'server':('127.0.1.100', 36412),
+    MME = MMEd(config={'server':('10.1.1.1', 36412),
                        'ue': UE,
                        'enb': {},
                        })
