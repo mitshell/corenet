@@ -34,10 +34,10 @@ from IPython.terminal.embed import InteractiveShellEmbed
 #
 from libmich.utils.repr import *
 from libmich.formats.L3Mobile import parse_L3
-from libmich.mobnet2.MME import *
-from libmich.mobnet2.AuC import AuC
-from libmich.mobnet2.GTPmgr import ARPd, GTPUd, TCPSYNACK
-from libmich.mobnet2.utils import mac_aton
+from libmich.mobnet.MME import *
+from libmich.mobnet.AuC import AuC
+from libmich.mobnet.GTPmgr import ARPd, GTPUd, TCPSYNACK
+from libmich.mobnet.utils import mac_aton
 
 # list of UE IMSI and associated IP address
 # those IMSI needs to be configured in libmich/mobnet/AuC.db too
@@ -89,7 +89,7 @@ def main():
     GTPUd.WL_PORTS = [('UDP', 53), ('UDP', 123)]
     
     ### MME config ###
-    MME.ConfigS1 = {
+    MMEd.ConfigS1 = {
     'MMEname': 'MichTelecomMME', # optional
     'ServedGUMMEIs': [
         {'servedPLMNs': [bytes(PLMN('00101'))],
@@ -116,7 +116,7 @@ def main():
     UEd.ESM_PDN = {
         'corenet': {
             'IP':[1, '0.0.0.0'], # PDN type (1:IPv4, 2:IPv6, 3:IPv4v6), UE IP@ will be set at runtime
-            'DNS':[192.168.1.1', '8.8.8.8'], # 2 IP@ for DNS servers
+            'DNS':['192.168.1.1', '8.8.8.8'], # 2 IP@ for DNS servers
             'QCI': 9, # QoS class id (9: internet browsing), NAS + S1 parameter
             'PriorityLevel': 15, # no priority (S1 parameter)
             'PreemptCap': 'shall-not-trigger-pre-emption', # or 'may-trigger-pre-emption' (S1 parameter)
