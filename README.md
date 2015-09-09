@@ -59,7 +59,36 @@ Launch
 
 You can launch the corenet application as is:
 ```bash
-$ python corenet.py
+$ python ./corenet.py 
+S1AP: 894 objects loaded into GLOBAL
+RRCLTE: 859 objects loaded into GLOBAL
+RRC3G: 4197 objects loaded into GLOBAL
+EPC 0.1.0 loaded -- interactive Evolved Packet Core
+ASN.1 classes: ASN1Obj, PER, GLOBAL
+Protocol stack classes: ENBd, UEd
+instances:
+	MME: MME server, handling .UE and .ENB
+	AUCd: AuC Authentication center
+	GTPd: GTPU tunnel manager
+functions:
+	stop: stops all 3 running instances
+	show: nicely prints signalling packets
+	parse_L3: parses NAS-PDU
+MME-initiated procedures:
+	Identification, GUTIReallocation, Authentication, SecurityModeControl, EMMInformation, MMEDetach
+In [1]: MME
+Out[1]: <libmich.mobnet.MME.MMEd at 0x7fef648e86d0>
+
+In [2]: MME.UE
+Out[2]: {}
+
+In [3]: MME.UEConfig
+Out[3]: 
+{'001010000000001': {'IP': '192.168.1.201'},
+ '001010000000002': {'IP': '192.168.1.202'}}
+
+In [4]: exit()
+leaving corenet now...
 ```
 
 You need to have the right to open raw Ethernet socket: for this you need to be 
@@ -69,6 +98,21 @@ the Python interpreter (*sudo setcap cap_net_raw+eip /usr/lib/python27*).
 From here, it is waiting for eNodeB to connect, and then to UE to attach. All 
 logs are written to the */tmp/corenet.log* file.
 
+```bash
+[2015-09-09 18:25:56.583878] --------########<<<<<<<<////////:::::::: CORENET ::::::::\\\\\\\\>>>>>>>>########--------
+[2015-09-09 18:25:56.583932] ...
+[2015-09-09 18:25:56.583969] [INF] [AuC] Starting AuC
+[2015-09-09 18:25:56.596805] [INF] [GTPUd] GTPU handler started
+[2015-09-09 18:25:56.620746] [INF] [ARPd] ARP resolver started
+[2015-09-09 18:25:56.621268] [DBG] [MME: 001.01.0001.01] SCTP server started on address ('10.1.1.1', 36412)
+[2015-09-09 18:25:56.621326] [DBG] [MME: 001.01.0001.01] UE IMSI configured: ['001010000000002', '001010000000001']
+[2015-09-09 18:25:56.621370] [DBG] [MME: 001.01.0001.01] eNodeB Global ID configured: []
+[2015-09-09 18:25:56.623675] [INF] [MME: 001.01.0001.01] SCTP server listening on address ('10.1.1.1', 36412)
+[2015-09-09 18:27:03.923110] [INF] [AuC] AuC stopped
+[2015-09-09 18:27:04.015783] [INF] [ARPd] ARP resolver stopped
+[2015-09-09 18:27:04.213427] [INF] [GTPUd] GTPU handler stopped
+[2015-09-09 18:27:04.549258] [INF] [MME: 001.01.0001.01] SCTP server stopped
+```
 
 
 License
