@@ -24,7 +24,7 @@ Installation
 Operating system and Python version
 ------------------------------------
 
-The application is made to work with Python 2 (starting with 2.6), just like 
+The application is made to work with Python 2 (starting with 2.7), just like 
 *libmich* library. Python 3 is not supported, mainly because libmich does not 
 work with it.
 It works on Linux, because of the need for SCTP support and Ethernet raw sockets. 
