@@ -24,7 +24,7 @@ Installation
 Operating system and Python version
 ------------------------------------
 
-The application is made to work with Python 2 (starting with 2.6), just like 
+The application is made to work with Python 2.7, just like 
 *libmich* library. Python 3 is not supported, mainly because libmich does not 
 work with it.
 It works on Linux, because of the need for SCTP support and Ethernet raw sockets. 
@@ -59,35 +59,140 @@ Launch
 
 You can launch the corenet application as is:
 ```bash
-$ python ./corenet.py 
+$ python ./corenet.py
 S1AP: 894 objects loaded into GLOBAL
-RRCLTE: 859 objects loaded into GLOBAL
-RRC3G: 4197 objects loaded into GLOBAL
-EPC 0.1.0 loaded -- interactive Evolved Packet Core
+RRCLTE: 859 objects loaded into GLOBAL_RRCLTE
+RRC3G: 4197 objects loaded into GLOBAL_RRC3G
+EPC 0.2.0 loaded -- interactive Evolved Packet Core
 ASN.1 classes: ASN1Obj, PER, GLOBAL
 Protocol stack classes: ENBd, UEd
 instances:
 	MME: MME server, handling .UE and .ENB
 	AUCd: AuC Authentication center
 	GTPd: GTPU tunnel manager
+	SMSd: SMS relay
 functions:
 	stop: stops all 3 running instances
 	show: nicely prints signalling packets
 	parse_L3: parses NAS-PDU
 MME-initiated procedures:
 	Identification, GUTIReallocation, Authentication, SecurityModeControl, EMMInformation, MMEDetach
+
 In [1]: MME
 Out[1]: <libmich.mobnet.MME.MMEd at 0x7fef648e86d0>
 
-In [2]: MME.UE
-Out[2]: {}
+In [2]: MME.ENB
+Out[2]: {('20869', '1a2d0'): <libmich.mobnet.ENBmgr.ENBd at 0x7fe0bb8b7d50>}
 
-In [3]: MME.UEConfig
-Out[3]: 
-{'001010000000001': {'IP': '192.168.1.201'},
- '001010000000002': {'IP': '192.168.1.202'}}
+In [3]: MME.UE
+Out[3]: {}
 
-In [4]: exit()
+In [4]: MME.UEConfig
+Out[4]: 
+{'001010000000001': {'IP': '192.168.1.201', 'Num': '0001'},
+ '001010000000002': {'IP': '192.168.1.202', 'Num': '0002'}}
+
+In [5]: # A Sony handset has connected
+
+In [6]: MME.UE
+Out[6]: {'001010000000001': <libmich.mobnet.UEmgr.UEd at 0x7fe0bb9ac550>}
+
+In [7]: sony = MME.UE['001010000000001']
+
+In [8]: # Here is the list of signaling procedure run with the handset
+
+In [9]: sony._proc
+Out[9]: 
+[<libmich.mobnet.UES1proc.InitialUEMessage at 0x7fe0bb676050>,
+ <libmich.mobnet.UENASproc.Attach at 0x7fe0bf9c9f50>,
+ <libmich.mobnet.UENASproc.Authentication at 0x7fe0bb6a0bd0>,
+ <libmich.mobnet.UES1proc.DownlinkNASTransport at 0x7fe0bb694550>,
+ <libmich.mobnet.UES1proc.UplinkNASTransport at 0x7fe0bb692f50>,
+ <libmich.mobnet.UES1proc.DownlinkNASTransport at 0x7fe0bf9c9e90>,
+ <libmich.mobnet.UES1proc.UplinkNASTransport at 0x7fe0bb690ad0>,
+ <libmich.mobnet.UENASproc.SecurityModeControl at 0x7fe0bb6a7390>,
+ <libmich.mobnet.UES1proc.DownlinkNASTransport at 0x7fe0bb68e390>,
+ <libmich.mobnet.UES1proc.UplinkNASTransport at 0x7fe0bb68ebd0>,
+ <libmich.mobnet.UENASproc.PDNConnectRequest at 0x7fe0bb67cfd0>,
+ <libmich.mobnet.UENASproc.ESMInformation at 0x7fe0bb67cb10>,
+ <libmich.mobnet.UES1proc.DownlinkNASTransport at 0x7fe0bb68e3d0>,
+ <libmich.mobnet.UES1proc.UplinkNASTransport at 0x7fe0bb68eb90>,
+ <libmich.mobnet.UENASproc.DefaultEPSBearerCtxtAct at 0x7fe0bba01490>,
+ <libmich.mobnet.UES1proc.InitialContextSetup at 0x7fe0bb67a0d0>,
+ <libmich.mobnet.UES1proc.UECapabilityInfoInd at 0x7fe0bb67a2d0>,
+ <libmich.mobnet.UES1proc.UplinkNASTransport at 0x7fe0bb6a5150>,
+ <libmich.mobnet.UES1proc.UplinkNASTransport at 0x7fe0bb693450>,
+ <libmich.mobnet.UENASproc.PDNConnectRequest at 0x7fe0bba12dd0>,
+ <libmich.mobnet.UENASproc.DefaultEPSBearerCtxtAct at 0x7fe0bba12c50>,
+ <libmich.mobnet.UES1proc.ERABSetup at 0x7fe0bb8dc7d0>,
+ <libmich.mobnet.UES1proc.UplinkNASTransport at 0x7fe0bb6a5390>]
+
+In [10]: # We can access the PDU exchanged at the S1 layer and the NAS layer
+
+In [11]: sony._proc[-1]._pdu
+Out[11]: 
+[(1470388288.693879,
+  'UL',
+  ('initiatingMessage',
+   {'criticality': 'ignore',
+    'procedureCode': 13,
+    'value': ('UplinkNASTransport',
+     {'protocolIEs': [...]})}))]
+
+In [12]: sony._proc[-2]._pdu
+Out[12]: 
+[(1470388288.62925,
+  'DL',
+  ('initiatingMessage',
+   {'criticality': 'reject',
+    'procedureCode': 5,
+    'value': ('E-RABSetupRequest',
+     {'protocolIEs': [...]})})),
+ (1470388288.685159,
+  'UL',
+  ('successfulOutcome',
+   {'criticality': 'reject',
+    'procedureCode': 5,
+    'value': ('E-RABSetupResponse',
+     {'protocolIEs': [...]})}))]
+
+In [13]: sony._proc[-3]._pdu
+Out[13]: 
+[(1470388288.615469,
+  'DL',
+  <[ACTIVATE_DEFAULT_EPS_BEARER_CTX_REQUEST]: EBT(EPS Bearer Type):6, PD(Protocol Discriminator):'2 : EPS session management messages', TI(Procedure Transaction ID):2, Type():'193 : Activate default EPS bearer context request', EQoS(EPS QoS):<EPS QoS[EQoS]: L():1, V():'\t'>, APN(Access Point Name):<Access Point Name[APN]: L():6, V():'\x05 sony'>, PDNAddr(PDN Address):<PDN Address[PDNAddr]: L():5, V():'\x01\xc0\xa8\x01\xc9'>, ProtConfig(Protocol Configuration options):<Protocol Configuration options[ProtConfig]: ...>>),
+ (1470388288.696052,
+  'UL',
+  <[ACTIVATE_DEFAULT_EPS_BEARER_CTX_ACCEPT]: EBT(EPS Bearer Type):6, PD(Protocol Discriminator):'2 : EPS session management messages', TI(Procedure Transaction ID):0, Type():'194 : Activate default EPS bearer context accept'>)]
+
+In [14]: # The GTPd server provides the statistics of the connection made by the handset
+
+In [15]: GTPd.stats
+Out[15]: 
+{'192.168.1.201': {'DNS': ['192.168.1.1'],
+  'ICMP': [],
+  'NTP': [],
+  'TCP': [('172.217.18.232', 443),
+   [...]
+   ('54.72.204.20', 443)],
+  'UDP': [('192.168.253.1', 53)],
+  'alien': [],
+  'resolved': ['www.googletagmanager.com',
+   [...]
+   'www.googleapis.com']}}
+
+In [16]: # We can send an SMS from the handset, it is collected into the SMSd server (it is not forwarded)
+
+In [17]: SMSd._SMQ
+Out[17]: deque([<[SMS_SUBMIT]: TP_SRR(TP Status Report Request):'0 : A status report is not requested', TP_UDHI(TP User Data Header Indicator):0b0, TP_RP(TP Reply Path):'0 : TP Reply Path parameter is not set in this SMS SUBMIT/DELIVER', TP_VPF(TP Validity Period Format):'0 : TP VP field not present', TP_RD(TP Reject Duplicates):0b0, TP_MTI(TP Message Type Indicator):'1 : SMS-SUBMIT', TP_MR(TP Message Reference):9, TP_Destination_Address():<[TP_Destination_Address]: Length(length of digits):10, Ext(Extension):1, Type(Type of number):'0 : unknown', NumPlan(Numbering plan identification):'1 : ISDN / telephony numbering plan (E.164 / E.163)', Num():1234566789>, TP_PID():<[TP_PID]: Format():'0 : telematic indication', Telematic():'0 : no telematic interworking, but SME-to-SME protocol', Protocol():'0 : Short Message Type 0'>, TP_DCS():<[TP_DCS]: Group():'0 : General Data Coding', GroupExt():'0 : uncompressed - no class meaning', Charset():'0 : GSM 7 bit default alphabet', Class():0, IndActive():0, Reserved():0, IndType():'0 : Voicemail Message Waiting'>, TP_VP():'', TP_UDL(User Data Length (in character)):13, TP_UD():Hello corenet>])
+
+In [18]: # And we can send an SMS from the SMSd server
+
+In [19]: SMSd.send_text('0001', 'hello sony', fromnum='0011223344')
+
+In [20]: # We can do much more, by acting e.g. with the 'sony' instance and the many methods it exposes, all logs are available in the /tmp/corenet.log file, and the verbosity is configurable for each class and instances, through the MME.DEBUG, MME.TRACE_*, ENBd.TRACE_* and UEd.TRACE_* attributes
+
+In [20]: exit()
 leaving corenet now...
 ```
 
@@ -95,23 +200,38 @@ You need to have the right to open raw Ethernet socket: for this you need to be
 root (e.g. *sudo python corenet.py*), or to set the CAP_NET_RAW capability for 
 the Python interpreter (*sudo setcap cap_net_raw+eip /usr/lib/python27*).
 
-From here, it is waiting for eNodeB to connect, and then to UE to attach. All 
-logs are written to the */tmp/corenet.log* file.
+From here, the application is waiting for eNodeB to connect, and then for UE to attach.
+All logs are written to the */tmp/corenet.log* file.
 
 ```bash
-[2015-09-09 18:25:56.583878] --------########<<<<<<<<////////:::::::: CORENET ::::::::\\\\\\\\>>>>>>>>########--------
-[2015-09-09 18:25:56.583932] ...
-[2015-09-09 18:25:56.583969] [INF] [AuC] Starting AuC
-[2015-09-09 18:25:56.596805] [INF] [GTPUd] GTPU handler started
-[2015-09-09 18:25:56.620746] [INF] [ARPd] ARP resolver started
-[2015-09-09 18:25:56.621268] [DBG] [MME: 001.01.0001.01] SCTP server started on address ('10.1.1.1', 36412)
-[2015-09-09 18:25:56.621326] [DBG] [MME: 001.01.0001.01] UE IMSI configured: ['001010000000002', '001010000000001']
-[2015-09-09 18:25:56.621370] [DBG] [MME: 001.01.0001.01] eNodeB Global ID configured: []
-[2015-09-09 18:25:56.623675] [INF] [MME: 001.01.0001.01] SCTP server listening on address ('10.1.1.1', 36412)
-[2015-09-09 18:27:03.923110] [INF] [AuC] AuC stopped
-[2015-09-09 18:27:04.015783] [INF] [ARPd] ARP resolver stopped
-[2015-09-09 18:27:04.213427] [INF] [GTPUd] GTPU handler stopped
-[2015-09-09 18:27:04.549258] [INF] [MME: 001.01.0001.01] SCTP server stopped
+[2016-08-05 11:08:40.637] --------########<<<<<<<<////////:::::::: CORENET ::::::::\\\\\\\\>>>>>>>>########--------
+[2016-08-05 11:08:40.637] ...
+[2016-08-05 11:08:40.637] [INF] [AuC] Starting AuC
+[2016-08-05 11:08:40.646] [INF] [GTPUd] GTPU handler started
+[2016-08-05 11:08:40.673] [INF] [ARPd] ARP resolver started
+[2016-08-05 11:08:40.716] [INF] [MME: 001.01.0001.01] SCTP server listening on address ('10.1.1.1', 36412)
+[2016-08-05 11:09:46.512] [INF] [MME: 001.01.0001.01] [eNB: ('00101', '10000')] S1AP stream established
+[2016-08-05 11:11:21.809] [WNG] [MME: 001.01.0001.01] [UE: 001010000000001] mobile using an unknown security context
+[2016-08-05 11:11:22.209] [WNG] [MME: 001.01.0001.01] [UE: 001010000000001] [(7, 82): Authentication] authentication failure: '21 : Synch failure'
+[2016-08-05 11:11:22.848] [WNG] [MME: 001.01.0001.01] [UE: 001010000000001] mobile using an unknown security context
+[2016-08-05 11:11:23.272] [INF] [GTPUd] setting GTP tunnel for mobile with IP 192.168.1.201
+[2016-08-05 11:11:23.285] [INF] [MME: 001.01.0001.01] [UE: 001010000000001] [(2, 193): DefaultEPSBearerCtxtAct] default bearer activated for EPS bearer ID 5, APN sony
+[2016-08-05 11:11:23.285] [INF] [MME: 001.01.0001.01] [UE: 001010000000001] [(7, 65): Attach] completed, GUTI reallocated, TMSI 0e040ec5
+[2016-08-05 11:11:28.685] [INF] [GTPUd] setting GTP tunnel for mobile with IP 192.168.1.201
+[2016-08-05 11:11:28.696] [INF] [MME: 001.01.0001.01] [UE: 001010000000001] [(2, 193): DefaultEPSBearerCtxtAct] default bearer activated for EPS bearer ID 6, APN sony
+[2016-08-05 11:14:45.202] [INF] [MME: 001.01.0001.01] [UE: 001010000000001] [ENB (S1AP): ('20869', '1a2d0')] [18: UEContextReleaseRequest] Cause: ('radioNetwork', 'user-inactivity')
+[2016-08-05 11:14:45.216] [INF] [GTPUd] unsetting GTP tunnel for mobile with IP 192.168.1.201
+[2016-08-05 11:14:53.252] [INF] [GTPUd] setting GTP tunnel for mobile with IP 192.168.1.201
+[2016-08-05 11:14:53.252] [WNG] [GTPUd] unknown GTP TEID from RAN: 2075244062
+[2016-08-05 11:14:53.253] [INF] [GTPUd] setting GTP tunnel for mobile with IP 192.168.1.201
+[2016-08-05 11:15:41.228] [INF] [SMSRelay] received SMS_SUBMIT for 1234566789: Hello corenet
+[2016-08-05 11:17:17.854] [INF] [SMSRelay] sending SMS text (charset 0) from 0011223344 to 0001: hello sony
+[2016-08-05 11:17:33.974] [INF] [MME: 001.01.0001.01] [UE: 001010000000001] [(7, 69): UEDetach] type: '11 : Combined EPS/IMSI detach; UE switch off'
+[2016-08-05 11:17:33.974] [INF] [GTPUd] unsetting GTP tunnel for mobile with IP 192.168.1.201
+[2016-08-05 11:18:02.748] [INF] [AuC] AuC stopped
+[2016-08-05 11:18:02.833] [INF] [ARPd] ARP resolver stopped
+[2016-08-05 11:18:02.957] [INF] [GTPUd] GTPU handler stopped
+[2016-08-05 11:18:03.413] [INF] [MME: 001.01.0001.01] SCTP server stopped
 ```
 
 
@@ -163,6 +283,9 @@ Then, several components of corenet have to be configured:
   * GTPUd.EXT_IF: ethernet interface name on SGi (same as ARPd.GGSN_ETH_IF)
   * GTPUd.GGSN_MAC_ADDR: ethernet MAC address of the interface on SGi (same as 
    ARPd.GGSN_MAC_ADDR)
+* SMSRelay: the SMS Relay which receives and sends SMS
+  * SMSRelay.SMSC_RP_NUM: SMS Relay phone number
+  * SMSRelay.TIMEZONE: timezone offset
 
 MME and UE-related parameters may also be configured: see information below
 on the software architecture, to know what parameters you may want to change.
@@ -280,6 +403,7 @@ Basic software structure:
 ```
 MMEd instance (libmich/mobnet/MME.py)
     .GTPd: GTPUd instance reference (libmich/mobnet/GTPmgr.py)
+    .SMSd: SMSRelayd instance reference (libmich/mobnet/SMSmgr.py)
     .AUCd: AuC instance reference (libmich/mobnet/AuC.py)
     .ENB -> ENBd instances (libmich/mobnet/ENBmgr.py)
         .Proc -> ENBSigProc instances (libmich/mobnet/ENBmgr.py)

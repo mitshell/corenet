@@ -36,13 +36,14 @@ from libmich.utils.repr import *
 from libmich.formats.L3Mobile import parse_L3
 from libmich.mobnet.MME import *
 from libmich.mobnet.AuC import AuC
-from libmich.mobnet.GTPmgr import ARPd, GTPUd, TCPSYNACK
+from libmich.mobnet.GTPmgr import *
+from libmich.mobnet.SMSmgr import SMSRelay
 from libmich.mobnet.utils import mac_aton
 
-# list of UE IMSI and associated IP address
+# list of UE IMSI and associated IP address and phone number (for SMS)
 # those IMSI needs to be configured in libmich/mobnet/AuC.db too
-UE = {'001010000000001': {'IP': '192.168.1.201'},
-      '001010000000002': {'IP': '192.168.1.202'},
+UE = {'001010000000001': {'IP': '192.168.1.201', 'Num': '0001'},
+      '001010000000002': {'IP': '192.168.1.202', 'Num': '0002'},
       }
 
 def main():
@@ -51,11 +52,13 @@ def main():
     AuC.DEBUG = ('ERR', 'WNG', 'INF')
     ARPd.DEBUG = ('ERR', 'WNG', 'INF')
     GTPUd.DEBUG = ('ERR', 'WNG', 'INF')
-    MMEd.DEBUG = ('ERR', 'WNG', 'INF', 'DBG')
-    MMEd.TRACE_SK = True
-    MMEd.TRACE_ASN1 = True
+    SMSRelay.DEBUG = ('ERR', 'WNG', 'INF')
+    MMEd.DEBUG = ('ERR', 'WNG', 'INF') #, 'DBG')
+    MMEd.TRACE_SK = False
+    MMEd.TRACE_ASN1 = False
     MMEd.TRACE_SEC = True
     MMEd.TRACE_NAS = True
+    MMEd.TRACE_SMS = True
     
     ### AuC config ###
     # authentication center
@@ -84,13 +87,19 @@ def main():
     GTPUd.EXT_IF = ARPd.GGSN_ETH_IF
     GTPUd.GGSN_MAC_ADDR = ARPd.GGSN_MAC_ADDR
     # mobile traffic filtering
-    GTPUd.BLACKHOLING = 'ext' # only traffic to local LAN will be forwarded
-    GTPUd.WL_ACTIVE = True # excepted DNS and NTP request to the Internet which will be handled too
-    GTPUd.WL_PORTS = [('UDP', 53), ('UDP', 123)]
+    #GTPUd.BLACKHOLING = False # allow all the traffic from handsets
+    GTPUd.BLACKHOLING = 'ext' # allow only the traffic on the local LAN, and on allowed ports for external networks
+    #GTPUd.BLACKHOLING = False # discard all the traffic from handsets, except on allowed ports
+    GTPUd.WL_ACTIVE = True # enables whitelist ports when BLACKHOLING is enabled
+    GTPUd.WL_PORTS = [('UDP', 53), ('UDP', 123)] # allow only those ports when BLACKHOLING is enabled
+    
+    ### SMS Relay config ###
+    SMSRelay.SMSC_RP_NUM = '990123' # SMS Relay phone number
+    SMSRelay.TIMEZONE = 0x80
     
     ### MME config ###
     MMEd.ConfigS1 = {
-    'MMEname': 'MichTelecomMME', # optional
+    'MMEname': 'CorenetMME', # optional
     'ServedGUMMEIs': [
         {'servedPLMNs': [bytes(PLMN('00101'))],
          'servedGroupIDs': ['\x00\x01'],
@@ -122,6 +131,7 @@ def main():
             'PreemptCap': 'shall-not-trigger-pre-emption', # or 'may-trigger-pre-emption' (S1 parameter)
             'PreemptVuln': 'not-pre-emptable', # 'pre-emptable' (S1 parameter)
             },
+        
         } # list of configured APN
     
     # start AuC, ARPd and GTPUd, MMEd
@@ -130,34 +140,41 @@ def main():
     log('...')
     AUCd = AuC()
     GTPd = GTPUd() # this starts ARPd automatically
-    MME = MMEd(config={'server':('10.1.1.1', 36412),
+    SMSd = SMSRelay()
+    MME = MMEd(config={'server': ('10.1.1.1', 36412),
                        'ue': UE,
                        'enb': {},
                        })
     
-    # add the TCPSYNACK module in GTPd (TCP SYN-ACK auto-answer to UE)
-    TCPSYNACK.GTPUd = GTPd
-    GTPd.MOD = [TCPSYNACK]
-    #GTPd.MOD = []
+    # You can add the TCPSYNACK module in GTPd.MOD to auto-answer to UE TCP-SYN packets
+    # and / or DNSRESP module in GTPd.MOD to auto-answer to UE DNS requests
+    # (do not forget to enable GTPd.BLACKHOLING in this case)
+    MOD.GTPUd = GTPd
+    #GTPd.MOD = [DNSRESP, TCPSYNACK]
+    GTPd.MOD = []
     
-    # configure MMEd IO to AuC and GTPUd
+    # configure MMEd IO to AuC, GTPUd and SMSRelay
     MME.AUCd = AUCd
     MME.GTPd = GTPd
+    MME.SMSd = SMSd
+    SMSd.MME = MME
     
     def stop():
         AUCd.stop()
         GTPd.stop()
+        SMSd.stop()
         MME.stop()
     
     # configure IPython corenet banner
     _ipy_banner = \
-        'EPC 0.1.0 loaded -- interactive Evolved Packet Core\n' \
+        'EPC 0.2.0 loaded -- interactive Evolved Packet Core\n' \
         'ASN.1 classes: ASN1Obj, PER, GLOBAL\n' \
         'Protocol stack classes: ENBd, UEd\n' \
         'instances:\n' \
         '\tMME: MME server, handling .UE and .ENB\n' \
         '\tAUCd: AuC Authentication center\n' \
         '\tGTPd: GTPU tunnel manager\n' \
+        '\tSMSd: SMS relay\n' \
         'functions:\n' \
         '\tstop: stops all 3 running instances\n' \
         '\tshow: nicely prints signalling packets\n' \
@@ -176,6 +193,7 @@ def main():
     _ipy_ns['MME'] = MME
     _ipy_ns['AUCd'] = AUCd
     _ipy_ns['GTPd'] = GTPd
+    _ipy_ns['SMSd'] = SMSd
     _ipy_ns['show'] = show
     _ipy_ns['stop'] = stop
     _ipy_ns['parse_L3'] = parse_L3
@@ -194,9 +212,7 @@ def main():
     #
     # before exiting, we need to close everything properly
     # MMEd, GTPUd, AuC ...
-    AUCd.stop()
-    GTPd.stop()
-    MME.stop()
+    stop()
     #
     # exit the application
     sys.exit()
