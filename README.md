@@ -14,7 +14,9 @@ UE <---Radio/RRC/NAS---> eNodeB <---S1AP/NAS---> corenet
 
 No other interfaces are supported by corenet (no interface to S-GW, P-GW, HSS, 
 no support for GTP-C or Diameter interfaces, ...).
-
+It has been successfully tested with the open-source Eurecom OpenAirInterface eNodeB, 
+the commercial Amarisoft eNodeB, and handsets from multiple vendors (Qualcomm, 
+Samsung, Mediatek, ...).
 
 
 Installation
@@ -40,9 +42,9 @@ The following libraries are required for corenet to work:
 * [pysctp](https://github.com/philpraxis/pysctp) is used to wrap the Linux
    kernel SCTP stack, and provides a Python API that is used by the MME server
 * [pycrypto](https://www.dlitz.net/software/pycrypto/) is used for handling the
-   AES computation for EEA2 / EIA2 as provided in CryptoMobile
+   AES computation for EEA2 / EIA2 and Milenage as provided in CryptoMobile
 * [CryptoMobile](https://github.com/mitshell/CryptoMobile/) is used for handling
-   Milenage and EEA / EIA computations
+   Milenage and all EEA / EIA computations
 * [libmich](https://github.com/mitshell/libmich/) contains all components needed
    for running an LTE / EPC core network
 
@@ -51,7 +53,8 @@ Installation
 ------------
 
 After all dependencies have been installed, there is no further installation 
-needed. The *corenet.py* file can be launched as is from the command line.
+needed. The *corenet.py* file can be launched as is from the command line, 
+after adapting its main settings.
 
 
 Launch
@@ -192,7 +195,9 @@ In [19]: SMSd.send_text('0001', 'hello sony', fromnum='0011223344')
 
 In [20]: # We can do much more, by acting e.g. with the 'sony' instance and the many methods it exposes, all logs are available in the /tmp/corenet.log file, and the verbosity is configurable for each class and instances, through the MME.DEBUG, MME.TRACE_*, ENBd.TRACE_* and UEd.TRACE_* attributes
 
-In [20]: exit()
+In [20]: sony.page() # when the handset gets disconnected, it is possible to page it
+
+In [21]: exit()
 leaving corenet now...
 ```
 

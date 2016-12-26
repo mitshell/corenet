@@ -59,6 +59,7 @@ def main():
     MMEd.TRACE_SEC = True
     MMEd.TRACE_NAS = True
     MMEd.TRACE_SMS = True
+    MMEd_server_addr = ('10.1.1.1', 36412)
     
     ### AuC config ###
     # authentication center
@@ -89,7 +90,7 @@ def main():
     # mobile traffic filtering
     #GTPUd.BLACKHOLING = False # allow all the traffic from handsets
     GTPUd.BLACKHOLING = 'ext' # allow only the traffic on the local LAN, and on allowed ports for external networks
-    #GTPUd.BLACKHOLING = False # discard all the traffic from handsets, except on allowed ports
+    #GTPUd.BLACKHOLING = True # discard all the traffic from handsets, except on allowed ports
     GTPUd.WL_ACTIVE = True # enables whitelist ports when BLACKHOLING is enabled
     GTPUd.WL_PORTS = [('UDP', 53), ('UDP', 123)] # allow only those ports when BLACKHOLING is enabled
     
@@ -109,9 +110,12 @@ def main():
     'MMERelaySupportIndicator': None, # optional
     'CriticalDiagnostics': None, # optional, 'true' otherwise
     }
+    # keeping track of all procedures t(for debugging purpose)
     ENBd.TRACE = True # trace all S1 eNB-related procedures
     UEd.TRACE_S1 = True # trace all S1 UE-related procedures
     UEd.TRACE_NAS = True # trace all NAS procedures
+    UEd.TRACE_SMS = True # trace all SMS procedures
+    # NAS security
     UEd.NASSEC_MAC = True # enforce NAS security
     UEd.NASSEC_ULCNT = True # enforce NAS UL count
     UEd.AUTH_POL_ATT = 1 # attach authentication policy
@@ -121,6 +125,12 @@ def main():
     UEd.SMC_IMEI_POL = 1 # request IMEISV only once during security mode ctrl
     UEd.SMC_EEA = [0, 1, 2, 3] # encryption algorithm priority: 0:None, 1:SNOW, 2:AES, 3:ZUC
     UEd.SMC_EIA = [1, 2, 3] # integrity protection algorithm priority: 0:None (emergency call only), 1:SNOW, 2:AES, 3:ZUC
+    # ATTACH extended features
+    UEd.ATT_EQU_PLMN = None # equivalent PLMNs 
+    UEd.ATT_ECN_LIST = None # list of (emergency service category, emergency number)
+    UEd.ATT_EPS_FEAT = None # EPS network feature support
+    UEd.ATT_ADD_UPD = None
+    # APN
     UEd.ESM_APN_DEF = 'corenet' # default APN
     UEd.ESM_PDN = {
         'corenet': {
@@ -134,6 +144,7 @@ def main():
         
         } # list of configured APN
     
+    
     # start AuC, ARPd and GTPUd, MMEd
     log('\n\n\n', withdate=False)
     log('--------########<<<<<<<<////////:::::::: CORENET ::::::::\\\\\\\\\\\\\\\\>>>>>>>>########--------')
@@ -141,7 +152,7 @@ def main():
     AUCd = AuC()
     GTPd = GTPUd() # this starts ARPd automatically
     SMSd = SMSRelay()
-    MME = MMEd(config={'server': ('10.1.1.1', 36412),
+    MME = MMEd(config={'server': MMEd_server_addr,
                        'ue': UE,
                        'enb': {},
                        })
@@ -211,7 +222,7 @@ def main():
     ipshell()
     #
     # before exiting, we need to close everything properly
-    # MMEd, GTPUd, AuC ...
+    # MMEd, GTPUd, AuC, SMSRelay ...
     stop()
     #
     # exit the application
