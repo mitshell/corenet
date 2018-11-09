@@ -52,7 +52,7 @@ The following libraries are required for corenet to work:
    AES computation for EEA2 / EIA2 and Milenage as provided in CryptoMobile
 * [CryptoMobile](https://github.com/mitshell/CryptoMobile/) is used for handling
    Milenage and all UEA / UIA / EEA / EIA computations
-* [pycrate](https://github.com/anssi-fr/pycrate/) contains all components needed
+* [pycrate](https://github.com/p1sec/pycrate/) contains all components needed
    for running the 3G and LTE / EPC core network stacks
 
    
