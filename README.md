@@ -33,8 +33,9 @@ Operating system and Python version
 ------------------------------------
 
 The application is made to work with Python 3.4 and over, but should also work with 
-Python 2.7, just like *Pycrate*. It works on Linux, because of the need for SCTP 
-support and Ethernet raw sockets. 
+Python 2.7, just like *Pycrate*. Beware that with Python 2.7, explicit unicode declarations
+are required for some parameters, hence prefer Python 3.
+It works on Linux, because of the need for SCTP support and Ethernet raw sockets. 
 It may work on other UNIX-like system, but this has not been tested.
 
 
