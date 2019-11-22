@@ -63,10 +63,10 @@ from pycrate_corenet import ProcCNESM
 #------------------------------------------------------------------------------#
 # IP, port is for listening for SCTP connections from HNBs
 # GTPU is for listening for GTPU connections from HNB
-# Warning: currently, only IPv4 is supported for GTPU address
-CorenetServer.SERVER_HNB['IP']   = '10.1.1.1'
+# Warning: currently, only IPv4 is supported as GTPU address
+CorenetServer.SERVER_HNB['IP']   = '127.1.1.1'
 CorenetServer.SERVER_HNB['port'] = 29169 # SCTP port for HNBAP and RUA protocols
-CorenetServer.SERVER_HNB['GTPU'] = '10.1.1.1'
+CorenetServer.SERVER_HNB['GTPU'] = '127.1.1.1'
 
 
 #------------------------------------------------------------------------------#
@@ -74,10 +74,10 @@ CorenetServer.SERVER_HNB['GTPU'] = '10.1.1.1'
 #------------------------------------------------------------------------------#
 # IP, port is for listening for SCTP connections from eNBs
 # GTPU is for listening for GTPU connections from eNB
-# Warning: currently, only IPv4 is supported for GTPU address
-CorenetServer.SERVER_ENB['IP']   = '10.2.1.1'
+# Warning: currently, only IPv4 is supported as GTPU address
+CorenetServer.SERVER_ENB['IP']   = '127.2.1.1'
 CorenetServer.SERVER_ENB['port'] = 36412 # SCTP port for S1AP protocol
-CorenetServer.SERVER_ENB['GTPU'] = '10.2.1.1'
+CorenetServer.SERVER_ENB['GTPU'] = '127.2.1.1'
 
 
 #------------------------------------------------------------------------------#
@@ -87,6 +87,7 @@ CorenetServer.SERVER_ENB['GTPU'] = '10.2.1.1'
 AuC.OP = b'AAAAAAAAAAAAAAAA'
 # path to the AuC.db file (here, this returns the path where corenet.py is)
 AuC.AUC_DB_PATH = os.path.dirname(os.path.abspath( __file__ )) + os.sep
+
 
 #------------------------------------------------------------------------------#
 # GTPUd and ARPd configuration
@@ -145,14 +146,14 @@ CorenetServer.EQUIV_PLMN = None
 #
 # RAN equipments (Home-NodeB and eNodeB) connection
 # They are indexed by (PLMN, CellId) in the RAN dict:
-# it can be initialized with {(PLMN, CellId): None} at setup
-# this provide a whitelist of allowed basestations.
+# it can be initialized with {(PLMN, CellId): None} here
+# in order to provide a whitelist of allowed basestations.
 CorenetServer.RAN = {}
 #
-# Otherwise, this is a flag to allow any RAN equipment to connect the server
+# Otherwise, this is a flag to allow any RAN equipment to connect to the server
 # in case its PLMN is in the RAN_ALLOWED_PLMN list.
 # If enabled, RAN dict will be populated at runtime
-# If disabled, RAN keys (PLMN, CellId) needs to be setup by configuration
+# If disabled, RAN keys (PLMN, CellId) needs to be setup by configuration (see above)
 CorenetServer.RAN_CONNECT_ANY = True
 #
 # This is the list of accepted PLMN for RAN equipment connecting, 
@@ -257,7 +258,7 @@ CorenetServer.ConfigPDP['*'] = {
 #------------------------------------------------------------------------------#
 # UE configuration
 #------------------------------------------------------------------------------#
-# Warning: (U)SIM IMSI / authentication key need to be configured in AuC.db too
+# Warning: (U)SIM IMSI / authentication keys need to be configured in AuC.db too
 
 # dict of configured UE, indexed by IMSI
 #
@@ -315,6 +316,14 @@ CorenetServer.ConfigUE['*'] = {
         'PDN'   : [('*', 1, '192.168.1.149'),
                    ('corenet', 3, '192.168.1.149', '0:1:0:95')]
         }
+
+# global LTE NAS security algorithm priority configuration for the MME signalling service
+# 0: null ciphering
+# 1: SNOW-3G based, EEA1, EIA1
+# 2: AES based, EEA2, EIA2
+# 3: ZUC based, EEA3, EIA3
+UEEMMd.SMC_EEA_PRIO = [0] # do not cipher NAS signalling
+UEEMMd.SMC_EIA_PRIO = [2, 1]
 
 
 #------------------------------------------------------------------------------#
