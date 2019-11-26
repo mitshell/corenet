@@ -162,9 +162,12 @@ CorenetServer.RAN_ALLOWED_PLMN = [CorenetServer.PLMN]
 
 # emergency number lists
 # None or list of 2-tuple [(number_category, number), ...]
-# number_category is a set of uint5 flags (Police, Ambulance, Fire, Marine, Mountain)
+# number_category is a set of strings: 'Police', 'Ambulance', 'Fire', 'Marine', 'Mountain'
 # number is a digits string
-#   e.g. [({0, 1, 2}, '112112'), ({3, 4}, '112113')]
+# e.g.
+#CorenetServer.EMERG_NUMS = [
+#    ({'Police', 'Ambulance', 'Fire'}, '112112'),
+#    ({'Marine', 'Mountain'}, '112113')]
 CorenetServer.EMERG_NUMS = None
 
 ### MME S1 connection parameters:
