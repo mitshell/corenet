@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 #/**
 # * Software Name : corenet 
@@ -41,15 +41,18 @@ from pycrate_corenet.ServerAuC  import AuC
 from pycrate_corenet.ServerSMS  import SMSd
 from pycrate_corenet.HdlrHNB    import HNBd
 from pycrate_corenet.HdlrENB    import ENBd
+from pycrate_corenet.HdlrGNB    import GNBd
 from pycrate_corenet.HdlrUE     import UEd
 from pycrate_corenet.HdlrUEIuCS import UEIuCSd, UEMMd, UECCd, UESSd
 from pycrate_corenet.HdlrUEIuPS import UEIuPSd, UEGMMd, UESMd
 from pycrate_corenet.HdlrUESMS  import UESMSd
 from pycrate_corenet.HdlrUES1   import UES1d, UEEMMd, UEESMd
+from pycrate_corenet.HdlrUENG   import UENGd
 from pycrate_corenet import ProcCNHnbap
 from pycrate_corenet import ProcCNRua
 from pycrate_corenet import ProcCNRanap
 from pycrate_corenet import ProcCNS1ap
+from pycrate_corenet import ProcCNNgap
 from pycrate_corenet import ProcCNMM
 from pycrate_corenet import ProcCNSMS
 from pycrate_corenet import ProcCNGMM
@@ -59,7 +62,7 @@ from pycrate_corenet import ProcCNESM
 
 
 #------------------------------------------------------------------------------#
-# configuration for connecting 3G HomeNodeBs (leave blank to keep deactivated)
+# configuration for connecting 3G HomeNodeBs
 #------------------------------------------------------------------------------#
 # IP, port is for listening for SCTP connections from HNBs
 # GTPU is for listening for GTPU connections from HNB
@@ -67,10 +70,11 @@ from pycrate_corenet import ProcCNESM
 CorenetServer.SERVER_HNB['IP']   = '127.1.1.1'
 CorenetServer.SERVER_HNB['port'] = 29169 # SCTP port for HNBAP and RUA protocols
 CorenetServer.SERVER_HNB['GTPU'] = '127.1.1.1'
-
+# uncomment to deactivate the HNB server
+#CorenetServer.SERVER_HNB = {}
 
 #------------------------------------------------------------------------------#
-# configuration for connecting LTE eNodeBs (leave blank to keep deactivated)
+# configuration for connecting LTE eNodeBs
 #------------------------------------------------------------------------------#
 # IP, port is for listening for SCTP connections from eNBs
 # GTPU is for listening for GTPU connections from eNB
@@ -78,7 +82,20 @@ CorenetServer.SERVER_HNB['GTPU'] = '127.1.1.1'
 CorenetServer.SERVER_ENB['IP']   = '127.2.1.1'
 CorenetServer.SERVER_ENB['port'] = 36412 # SCTP port for S1AP protocol
 CorenetServer.SERVER_ENB['GTPU'] = '127.2.1.1'
+# uncomment to deactivate the ENB server
+#CorenetServer.SERVER_ENB = {}
 
+#------------------------------------------------------------------------------#
+# configuration for connecting 5G gNodeBs
+#------------------------------------------------------------------------------#
+# IP, port is for listening for SCTP connections from gNBs
+# GTPU is for listening for GTPU connections from gNB
+# Warning: currently, only IPv4 is supported as GTPU address
+CorenetServer.SERVER_GNB['IP']   = '127.3.1.1'
+CorenetServer.SERVER_GNB['port'] = 38412 # SCTP port for NGAP protocol
+CorenetServer.SERVER_GNB['GTPU'] = '127.3.1.1'
+# uncomment to deactivate the GNB server
+#CorenetServer.SERVER_GNB = {}
 
 #------------------------------------------------------------------------------#
 # Authentication center configuration
@@ -96,8 +113,8 @@ AuC.AUC_DB_PATH = os.path.dirname(os.path.abspath( __file__ )) + os.sep
 ### external interfaces (toward Internet or other service networks)
 
 # ARPd interface info
-ARPd.GGSN_ETH_IF     = 'eth0'
-ARPd.GGSN_MAC_ADDR   = '08:00:00:01:02:03'
+ARPd.GGSN_ETH_IF     = 'enp0s31f6' #'eth0'
+ARPd.GGSN_MAC_ADDR   = '8c:16:45:d7:cd:67' #'08:00:00:01:02:03'
 ARPd.GGSN_IP_ADDR    = '192.168.1.100'
 # ARPd LAN prefix and router info
 ARPd.SUBNET_PREFIX   = '192.168.1.0/24'
@@ -132,7 +149,8 @@ GTPUd.DROP_SPOOF     = True
 # GTPUd internal IP interfaces (do not change)
 GTPUd.GTP_PORT       = 2152 # UDP port for GTP-U protocol
 GTPUd.GTP_IF         = (CorenetServer.SERVER_HNB['GTPU'],
-                        CorenetServer.SERVER_ENB['GTPU'], )
+                        CorenetServer.SERVER_ENB['GTPU'],
+                        CorenetServer.SERVER_GNB['GTPU'])
 
 
 #------------------------------------------------------------------------------#
@@ -170,7 +188,49 @@ CorenetServer.RAN_ALLOWED_PLMN = [CorenetServer.PLMN]
 #    ({'Marine', 'Mountain'}, '112113')]
 CorenetServer.EMERG_NUMS = None
 
-### MME S1 connection parameters:
+#------------------------------------------------------------------------------#
+# AMF NG connection parameters
+#------------------------------------------------------------------------------#
+# AMF RegionID, SetID and Pointer
+CorenetServer.AMF_RID  = 1 
+CorenetServer.AMF_SID  = 1
+CorenetServer.AMF_PTR  = 0
+# list of PLMN and slices supported (replaces the list of equivalent PLMN in 3G and 4G)
+# a sliceSupportList is basically a Sequence of S-NSSAI
+CorenetServer.AMF_SNSSAI = {
+    0  : (0x00, ), # default S-NSSAI
+    1  : (0x01, ),
+    2  : (0x02, ),
+    21 : (0x02, 0x000001),
+    }
+CorenetServer.AMF_PLMNSupp = [
+    (CorenetServer.PLMN, [CorenetServer.AMF_SNSSAI[0]]),
+    #($plmn1, [CorenetServer.AMF_SNSSAI[1]]),
+    #($plmn2, [CorenetServer.AMF_SNSSAI[2], CorenetServer.AMF_SNSSAI[21]])
+    ]
+# NG connection AMF parameters
+CorenetServer.ConfigNG    = {
+    'AMFName'            : 'CorenetAMF',
+    'PLMNSupportList'    : [
+            {'pLMNIdentity': plmn_str_to_buf(plmn),
+             'sliceSupportList': [
+                {'s-NSSAI': {'sST': uint_to_bytes(snssai[0], 8), 'sD': uint_to_bytes(snssai[1], 24)}} if len(snssai) > 1 else \
+                {'s-NSSAI': {'sST': uint_to_bytes(snssai[0], 8)}} for snssai in snssais],
+            } for (plmn, snssais) in CorenetServer.AMF_PLMNSupp],
+    'RelativeAMFCapacity': 10,
+    'ServedGUAMIList'    : [
+        {'gUAMI': {
+            'pLMNIdentity': plmn_str_to_buf(CorenetServer.PLMN),
+            'aMFRegionID' : (CorenetServer.AMF_RID, 8),
+            'aMFSetID'    : (CorenetServer.AMF_SID, 10),
+            'aMFPointer'  : (CorenetServer.AMF_PTR, 6)}},
+        ],
+    #'UERetentionInformation': 'ues-retained',
+    }
+
+#------------------------------------------------------------------------------#
+# MME S1 connection parameters
+#------------------------------------------------------------------------------#
 # MME GroupID and Code
 CorenetServer.MME_GID  = 1
 CorenetServer.MME_CODE = 1
@@ -218,8 +278,9 @@ CorenetServer.ConfigPDN['*'] = {
         'MTU': (None, None),
         }
 
-
-### IuCS and IuPS connection parameters:
+#------------------------------------------------------------------------------#
+# IuCS and IuPS connection parameters
+#------------------------------------------------------------------------------#
 # CS and PS parameters
 CorenetServer.ConfigIuCS  = {
     'EquivPLMNList': CorenetServer.EQUIV_PLMN,
@@ -257,6 +318,7 @@ CorenetServer.ConfigPDP['*'] = {
                 (2, '2001:4860:4860::8844')),
         'MTU': (None, None),
         }
+
 
 #------------------------------------------------------------------------------#
 # UE configuration
@@ -355,17 +417,30 @@ ENBd.DEBUG = ('ERR', 'WNG', 'INF', 'DBG')
 ENBd.TRACE_ASN_S1AP   = False
 ENBd.TRACK_PROC_S1AP  = True
 
+# global GNBd debug level
+GNBd.DEBUG = ('ERR', 'WNG', 'INF', 'DBG')
+GNBd.TRACE_ASN_NGAP   = False
+GNBd.TRACK_PROC_NGAP  = True
+
 # global UEd debug level
 UEd.DEBUG  = ('ERR', 'WNG', 'INF', 'DBG')
+# UE 3G
 UEd.TRACE_RANAP_CS    = False
 UEd.TRACE_RANAP_PS    = False
 UEd.TRACE_NAS_CS      = True
 UEd.TRACE_NAS_PS      = True
+# UE 4G
 UEd.TRACE_S1AP        = False
 UEd.TRACE_NAS_EPS_SEC = False
 UEd.TRACE_NAS_EPS     = True
+# UE 5G
+UEd.TRACE_NGAP        = False
+UEd.TRACE_NAS_5GS_SEC = False
+UEd.TRACE_NAS_5GS     = True
+# UE SMS
 UEd.TRACE_NAS_SMS     = True
 #
+# UE 3G
 UEIuCSd.TRACK_PROC    = True
 UEMMd.TRACK_PROC      = True
 #UECCd.TRACK_PROC      = True
@@ -374,9 +449,12 @@ UESMSd.TRACK_PROC     = True
 UEIuPSd.TRACK_PROC    = True
 UEGMMd.TRACK_PROC     = True
 UESMd.TRACK_PROC      = True
+# UE 4G
 UES1d.TRACK_PROC      = True
 UEEMMd.TRACK_PROC     = True
 UEESMd.TRACK_PROC     = True
+# UE 5G
+UENGd.TRACK_PROC      = True
 
 
 #------------------------------------------------------------------------------#
@@ -412,15 +490,16 @@ def main():
     # configure IPython corenet banner
     _ipy_banner = \
         'Corenet 0.2.0 loaded -- interactive mobile core network\n\n'\
-        'ASN.1 modules: HNBAP, RUA, RANAP, S1AP, SS, RRC3G, RRCLTE and ASN_GLOBAL\n'\
-        'ASN.1 PDU: PDU_HNBAP, PDU_RUA, PDU_RANAP, PDU_S1AP, PDU_SS_Facility\n'\
+        'ASN.1 modules: HNBAP, RUA, RANAP, S1AP, SS, RRC3G, RRCLTE, RRCNR and ASN_GLOBAL\n'\
+        'ASN.1 PDU: PDU_HNBAP, PDU_RUA, PDU_RANAP, PDU_S1AP, PDU_NGAP, PDU_SS_Facility\n'\
         'NAS module for messages and IEs: NAS\n'\
         'Protocol procedures modules:\n'\
-        '\t- ProcHnbap, ProcRua, ProcRanap, ProcS1ap\n'\
+        '\t- ProcHnbap, ProcRua, ProcRanap, ProcS1ap, ProcNgap\n'\
         '\t- ProcMM, ProcSMS, ProcGMM, ProcSM, ProcEMM, ProcESM\n'\
         'Protocol stack classes (and attribute\'s names at runtime):\n'\
         '\t- HNBd\n'\
         '\t- ENBd\n'\
+        '\t- GNBd\n'\
         '\t- UEd -> UEIuCSd (IuCS) -> UEMMd  (MM)\n'\
         '\t                        -> UESMSd (SMS)\n'\
         '\t      -> UEIuPSd (IuPS) -> UEGMMd (GMM)\n'\
@@ -428,6 +507,7 @@ def main():
         '\t      -> UES1d   (S1)   -> UEEMMd (EMM)\n'\
         '\t                        -> UESMSd (SMS)\n'\
         '\t                        -> UEESMd (ESM)\n'\
+        '\t      -> UENGd   (NG)   -> None (yet)\n'\
         'Instances:\n'\
         '\t- Server: signalling server (instance of CorenetServer), \n'\
         '\t          handling instances of HNBd and ENBd under the .RAN attribute\n'\
@@ -450,13 +530,16 @@ def main():
     _ipy_ns['RUA']          = RUA
     _ipy_ns['RANAP']        = RANAP
     _ipy_ns['S1AP']         = S1AP
+    _ipy_ns['NGAP']         = NGAP
     _ipy_ns['SS']           = SS
     _ipy_ns['RRC3G']        = RRC3G
     _ipy_ns['RRCLTE']       = RRCLTE
+    _ipy_ns['RRCNR']        = RRCNR
     _ipy_ns['PDU_HNBAP']    = PDU_HNBAP
     _ipy_ns['PDU_RUA']      = PDU_RUA
     _ipy_ns['PDU_RANAP']    = PDU_RANAP
     _ipy_ns['PDU_S1AP']     = PDU_S1AP
+    _ipy_ns['PDU_NGAP']     = PDU_NGAP
     _ipy_ns['PDU_SS_Facility'] = PDU_SS_Facility
     # NAS module
     _ipy_ns['NAS']          = NAS
@@ -465,6 +548,7 @@ def main():
     _ipy_ns['ProcRua']      = ProcCNRua
     _ipy_ns['ProcRanap']    = ProcCNRanap
     _ipy_ns['ProcS1ap']     = ProcCNS1ap
+    _ipy_ns['ProcNgap']     = ProcCNNgap
     _ipy_ns['ProcMM']       = ProcCNMM
     _ipy_ns['ProcSMS']      = ProcCNSMS
     #_ipy_ns['ProcCC']       = ProcCNCC
@@ -476,6 +560,7 @@ def main():
     # Protocol stack classes
     _ipy_ns['HNBd']         = HNBd
     _ipy_ns['ENBd']         = ENBd
+    _ipy_ns['GNBd']         = GNBd
     _ipy_ns['UEd']          = UEd
     _ipy_ns['UEIuCSd']      = UEIuCSd
     _ipy_ns['UEMMd']        = UEMMd
@@ -486,6 +571,7 @@ def main():
     _ipy_ns['UES1d']        = UES1d
     _ipy_ns['UEEMMd']       = UEEMMd
     _ipy_ns['UEESMd']       = UEESMd
+    _ipy_ns['UENGd']        = UENGd
     # servers' instances
     _ipy_ns['Server']       = Server
     _ipy_ns['GTPUd']        = Server.GTPUd
