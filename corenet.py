@@ -4,7 +4,8 @@
 # * Software Name : corenet 
 # * Version : 0.2
 # *
-# * Copyright © 2015. Benoit Michau. ANSSI.
+# * Copyright 2015. Benoit Michau. ANSSI.
+# * Copyright 2020. Benoit Michau. P1Sec.
 # *
 # * This program is free software: you can redistribute it and/or modify
 # * it under the terms of the GNU General Public License version 2 as published
@@ -113,8 +114,8 @@ AuC.AUC_DB_PATH = os.path.dirname(os.path.abspath( __file__ )) + os.sep
 ### external interfaces (toward Internet or other service networks)
 
 # ARPd interface info
-ARPd.GGSN_ETH_IF     = 'enp0s31f6' #'eth0'
-ARPd.GGSN_MAC_ADDR   = '8c:16:45:d7:cd:67' #'08:00:00:01:02:03'
+ARPd.GGSN_ETH_IF     = 'eth0'
+ARPd.GGSN_MAC_ADDR   = '08:00:00:01:02:03'
 ARPd.GGSN_IP_ADDR    = '192.168.1.100'
 # ARPd LAN prefix and router info
 ARPd.SUBNET_PREFIX   = '192.168.1.0/24'
@@ -158,27 +159,12 @@ GTPUd.GTP_IF         = (CorenetServer.SERVER_HNB['GTPU'],
 #------------------------------------------------------------------------------#
 # main PLMN served
 CorenetServer.PLMN = '00101'
-# equivalent PLMNs served
+#
+# equivalent PLMNs served, used over S1, IuCS and IuPS
 # None or list of PLMNs ['30124', '763326', ...]
 CorenetServer.EQUIV_PLMN = None
 #
-# RAN equipments (Home-NodeB and eNodeB) connection
-# They are indexed by (PLMN, CellId) in the RAN dict:
-# it can be initialized with {(PLMN, CellId): None} here
-# in order to provide a whitelist of allowed basestations.
-CorenetServer.RAN = {}
-#
-# Otherwise, this is a flag to allow any RAN equipment to connect to the server
-# in case its PLMN is in the RAN_ALLOWED_PLMN list.
-# If enabled, RAN dict will be populated at runtime
-# If disabled, RAN keys (PLMN, CellId) needs to be setup by configuration (see above)
-CorenetServer.RAN_CONNECT_ANY = True
-#
-# This is the list of accepted PLMN for RAN equipment connecting, 
-# when RAN_CONNECT_ANY is enabled
-CorenetServer.RAN_ALLOWED_PLMN = [CorenetServer.PLMN]
-
-# emergency number lists
+# emergency number lists, used over S1, IuCS and IuPS
 # None or list of 2-tuple [(number_category, number), ...]
 # number_category is a set of strings: 'Police', 'Ambulance', 'Fire', 'Marine', 'Mountain'
 # number is a digits string
@@ -188,45 +174,57 @@ CorenetServer.RAN_ALLOWED_PLMN = [CorenetServer.PLMN]
 #    ({'Marine', 'Mountain'}, '112113')]
 CorenetServer.EMERG_NUMS = None
 
+
+# Connection from RAN equipments:
+# Home-NodeB, eNodeB and gNodeB indexed by their global ID
+# (PLMN, CellId) for home-NodeB and eNodeB
+# (PLMN, CellType, CellId) for gNodeB
+# the RAN dict can be initialized with {(PLMN, *Cell*): None} here
+# this provides a whitelist of allowed basestations.
+CorenetServer.RAN = {}
+#
+# Otherwise, this is a flag to allow any RAN equipment to connect to the server
+# in case its PLMN is in the RAN_ALLOWED_PLMN list.
+# If enabled, RAN dict will be populated at runtime
+    # If disabled, RAN keys (PLMN, *Cell*) needs to be setup by configuration (see above)
+CorenetServer.RAN_CONNECT_ANY = True
+#
+# This is the list of accepted PLMN for RAN equipment connecting, 
+# when RAN_CONNECT_ANY is enabled
+CorenetServer.RAN_ALLOWED_PLMN = [CorenetServer.PLMN]
+
+
 #------------------------------------------------------------------------------#
 # AMF NG connection parameters
 #------------------------------------------------------------------------------#
-# AMF RegionID, SetID and Pointer
-CorenetServer.AMF_RID  = 1 
-CorenetServer.AMF_SID  = 1
-CorenetServer.AMF_PTR  = 0
-# list of PLMN and slices supported (replaces the list of equivalent PLMN in 3G and 4G)
-# a sliceSupportList is basically a Sequence of S-NSSAI
+# AMF ID for each served PLMN
+# PLMN (str): AMF ID 3-tuple (RegionID uint8, SetID uint10, Pointer uint6)
+CorenetServer.AMF_GUAMI = {
+    CorenetServer.PLMN: (1, 1, 0),
+    }
+#
+# arbitrary dict of indexed slices identifiers
+# S-NSSAI is at least an SST (uint8) and eventually an SD (uint24)
 CorenetServer.AMF_SNSSAI = {
     0  : (0x00, ), # default S-NSSAI
     1  : (0x01, ),
     2  : (0x02, ),
     21 : (0x02, 0x000001),
     }
-CorenetServer.AMF_PLMNSupp = [
-    (CorenetServer.PLMN, [CorenetServer.AMF_SNSSAI[0]]),
-    #($plmn1, [CorenetServer.AMF_SNSSAI[1]]),
-    #($plmn2, [CorenetServer.AMF_SNSSAI[2], CorenetServer.AMF_SNSSAI[21]])
-    ]
+# list of slice supported for each served PLMN
+CorenetServer.AMF_PLMNSupp = {
+    CorenetServer.PLMN: [CorenetServer.AMF_SNSSAI[0]],
+    #$plmn1: [CorenetServer.AMF_SNSSAI[1]],
+    #$plmn2: [CorenetServer.AMF_SNSSAI[2], CorenetServer.AMF_SNSSAI[21]],
+    }
+#
 # NG connection AMF parameters
 CorenetServer.ConfigNG    = {
-    'AMFName'            : 'CorenetAMF',
-    'PLMNSupportList'    : [
-            {'pLMNIdentity': plmn_str_to_buf(plmn),
-             'sliceSupportList': [
-                {'s-NSSAI': {'sST': uint_to_bytes(snssai[0], 8), 'sD': uint_to_bytes(snssai[1], 24)}} if len(snssai) > 1 else \
-                {'s-NSSAI': {'sST': uint_to_bytes(snssai[0], 8)}} for snssai in snssais],
-            } for (plmn, snssais) in CorenetServer.AMF_PLMNSupp],
-    'RelativeAMFCapacity': 10,
-    'ServedGUAMIList'    : [
-        {'gUAMI': {
-            'pLMNIdentity': plmn_str_to_buf(CorenetServer.PLMN),
-            'aMFRegionID' : (CorenetServer.AMF_RID, 8),
-            'aMFSetID'    : (CorenetServer.AMF_SID, 10),
-            'aMFPointer'  : (CorenetServer.AMF_PTR, 6)}},
-        ],
+    'AMFName'             : 'CorenetAMF',
+    'RelativeAMFCapacity' : 10,
     #'UERetentionInformation': 'ues-retained',
     }
+
 
 #------------------------------------------------------------------------------#
 # MME S1 connection parameters
@@ -277,6 +275,7 @@ CorenetServer.ConfigPDN['*'] = {
                 (2, '2001:4860:4860::8844')),
         'MTU': (None, None),
         }
+
 
 #------------------------------------------------------------------------------#
 # IuCS and IuPS connection parameters
@@ -419,7 +418,7 @@ ENBd.TRACK_PROC_S1AP  = True
 
 # global GNBd debug level
 GNBd.DEBUG = ('ERR', 'WNG', 'INF', 'DBG')
-GNBd.TRACE_ASN_NGAP   = False
+GNBd.TRACE_ASN_NGAP   = True
 GNBd.TRACK_PROC_NGAP  = True
 
 # global UEd debug level
