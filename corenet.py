@@ -117,10 +117,20 @@ AuC.AUC_DB_PATH = os.path.dirname(os.path.abspath( __file__ )) + os.sep
 ARPd.GGSN_ETH_IF     = 'eth0'
 ARPd.GGSN_MAC_ADDR   = '08:00:00:01:02:03'
 ARPd.GGSN_IP_ADDR    = '192.168.1.100'
+
+# local config
+ARPd.GGSN_ETH_IF     = 'wlp61s0'
+ARPd.GGSN_IP_ADDR    = '192.168.50.135'
+
 # ARPd LAN prefix and router info
 ARPd.SUBNET_PREFIX   = '192.168.1.0/24'
 ARPd.ROUTER_MAC_ADDR = 'f4:00:00:01:02:03'
 ARPd.ROUTER_IP_ADDR  = '192.168.1.1'
+
+# local config
+ARPd.SUBNET_PREFIX   = '192.168.50.0/24'
+ARPd.GGSN_IP_ADDR    = '192.168.50.1'
+
 # set of IP addresses dedicated to UEs
 ARPd.IP_POOL = set()
 for i in range(149, 250):
@@ -509,7 +519,7 @@ def main():
         '\t      -> UENGd   (NG)   -> None (yet)\n'\
         'Instances:\n'\
         '\t- Server: signalling server (instance of CorenetServer), \n'\
-        '\t          handling instances of HNBd and ENBd under the .RAN attribute\n'\
+        '\t          handling instances of HNBd, ENBd and GNBd under the .RAN attribute\n'\
         '\t          handling instances of UEd under the .UE attribute\n' \
         '\t- AUCd  : AuC Authentication center\n'\
         '\t- GTPUd : GTP-U tunnel manager\n'\
