@@ -60,6 +60,12 @@ from pycrate_corenet import ProcCNGMM
 from pycrate_corenet import ProcCNSM
 from pycrate_corenet import ProcCNEMM
 from pycrate_corenet import ProcCNESM
+#
+from pycrate_asn1rt.asnobj import ASN1Obj
+# ASN1Obj._SILENT: set it to True to not get error logs from the ASN.1 runtime 
+#                  printed in the console
+#ASN1Obj._SILENT = False
+ASN1Obj._SILENT = True
 
 
 #------------------------------------------------------------------------------#
@@ -118,18 +124,10 @@ ARPd.GGSN_ETH_IF     = 'eth0'
 ARPd.GGSN_MAC_ADDR   = '08:00:00:01:02:03'
 ARPd.GGSN_IP_ADDR    = '192.168.1.100'
 
-# local config
-ARPd.GGSN_ETH_IF     = 'wlp61s0'
-ARPd.GGSN_IP_ADDR    = '192.168.50.135'
-
 # ARPd LAN prefix and router info
 ARPd.SUBNET_PREFIX   = '192.168.1.0/24'
 ARPd.ROUTER_MAC_ADDR = 'f4:00:00:01:02:03'
 ARPd.ROUTER_IP_ADDR  = '192.168.1.1'
-
-# local config
-ARPd.SUBNET_PREFIX   = '192.168.50.0/24'
-ARPd.GGSN_IP_ADDR    = '192.168.50.1'
 
 # set of IP addresses dedicated to UEs
 ARPd.IP_POOL = set()
