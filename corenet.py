@@ -120,7 +120,7 @@ AuC.AUC_DB_PATH = os.path.dirname(os.path.abspath( __file__ )) + os.sep
 # SIDF SUCI decryption function
 AuC.SIDF_ECIES_K = {
     # index: Home Network Public Key Identifier (0..255), according to TS 31.102, section 4.4.11.8
-    # value: 2-tuple with Protection Scheme Identifier (profile 'A' or 'B') and 
+    # value: 2-tuple with Protection Scheme Identifier (profile 'A' or 'B') and
     #        corresponding Home Network Private Key value
     #
     # ECIES public / private keypairs must be generated according to the CryptoMobile.ECIES API
