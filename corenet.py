@@ -107,11 +107,36 @@ CorenetServer.SERVER_GNB['GTPU'] = '127.3.1.1'
 #------------------------------------------------------------------------------#
 # Authentication center configuration
 #------------------------------------------------------------------------------#
+# WARNING: all parameters provided for the AuC / SIDF are provided as examples
+# and should be changed according to your secret configuration
+#
 # Milenage OP parameter (16 bytes)
 AuC.OP = b'AAAAAAAAAAAAAAAA'
+# TUAK TOP paramater (32 bytes)
+AuC.TOP = b'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 # path to the AuC.db file (here, this returns the path where corenet.py is)
 AuC.AUC_DB_PATH = os.path.dirname(os.path.abspath( __file__ )) + os.sep
-
+#
+# SIDF SUCI decryption function
+AuC.SIDF_ECIES_K = {
+    # index: Home Network Public Key Identifier (0..255), according to TS 31.102, section 4.4.11.8
+    # value: 2-tuple with Protection Scheme Identifier (profile 'A' or 'B') and 
+    #        corresponding Home Network Private Key value
+    #
+    # ECIES public / private keypairs must be generated according to the CryptoMobile.ECIES API
+    #
+    # X25519 example keypair
+    # pubkey: d6797fcf69c55e889e5bdf9fc4d300eff2aa5b539bb9e97efe14ca244727b029
+    #0 : ('A', unhexlify('38859b29cbbdee43fda218968f8b96bb9a7326ec05b43343939220fa2ac1ec56')),
+    #
+    # secp256r1 example keypair
+    # pubkey: 02519c4707c3535eb5a86a66d056696a45537d4d76e8997375dcd7d30b1f37c6c5
+    #1 : ('B', unhexlify('308187020100301306072a8648ce3d020106082a8648ce3d030107046d306b02'\
+    #                    '01010420d633fa02b1808226c0a27ddf093e332751f10cb002e8236d3723bb44'\
+    #                    '33a55d41a14403420004519c4707c3535eb5a86a66d056696a45537d4d76e899'\
+    #                    '7375dcd7d30b1f37c6c50fb946aec017a332ff00e3993f35b54992004894f7d2'\
+    #                    'fc1ee0df47fde0c91cf8')
+    }
 
 #------------------------------------------------------------------------------#
 # GTPUd and ARPd configuration
