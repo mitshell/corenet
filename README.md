@@ -56,7 +56,11 @@ The following libraries are required for corenet to work:
 * [pycrate](https://github.com/p1sec/pycrate/) contains all components needed
    for running the 3G and LTE / EPC core network stacks
 
-   
+As I am currently missing some hardware / eNB / femtocells to properly test and run corenet,
+it could be that some recent changes in pycrate are breaking corenet. If it is the case,
+go for an earlier version of pycrate, e.g.: 0.5.5 or 0.5.4.
+
+
 Installation
 ------------
 
