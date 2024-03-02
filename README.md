@@ -53,7 +53,7 @@ The following libraries are required for corenet to work:
    AES computation for EEA2 / EIA2 and Milenage as provided in CryptoMobile
 * [CryptoMobile](https://github.com/mitshell/CryptoMobile/) is used for handling
    Milenage and all UEA / UIA / EEA / EIA computations
-* [pycrate](https://github.com/p1sec/pycrate/) contains all components needed
+* [pycrate](https://github.com/pycrate-org/pycrate/) contains all components needed
    for running the 3G and LTE / EPC core network stacks
 
 As I am currently missing some hardware / eNB / femtocells to properly test and run corenet,
